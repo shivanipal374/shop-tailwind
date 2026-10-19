@@ -4,71 +4,80 @@ import Footer from "@/app/components/Footer";
 import ProductCard from "@/app/components/ProductCard";
 import Icon from "@/app/components/icons/icons";
 import { useEffect, useState } from "react";
+import axios from "axios";
+import Image from "next/image";
 
-const categories = [
-  {
-    id: 1,
-    name: "Electronics",
-    image: "/images/electonics.jfif",
-    description: "Latest gadgets & devices",
-  },
-  {
-    id: 2,
-    name: "Fashion",
-    image: "/images/fashion.jfif",
-    description: "Style for every occasion",
-  },
-  {
-    id: 3,
-    name: "Home & Kitchen",
-    image: "/images/Home & Kitchen.jfif",
-    description: "Make your home better",
-  },
-  {
-    id: 4,
-    name: "Beauty",
-    image: "/images/beauty.jfif",
-    description: "Feel good, look great",
-  },
-];
+// const categories = [
+//   {
+//     id: 1,
+//     name: "Electronics",
+//     image: "/images/electonics.jfif",
+//     description: "Latest gadgets & devices",
+//   },
+//   {
+//     id: 2,
+//     name: "Fashion",
+//     image: "/images/fashion.jfif",
+//     description: "Style for every occasion",
+//   },
+//   {
+//     id: 3,
+//     name: "Home & Kitchen",
+//     image: "/images/Home & Kitchen.jfif",
+//     description: "Make your home better",
+//   },
+//   {
+//     id: 4,
+//     name: "Beauty",
+//     image: "/images/beauty.jfif",
+//     description: "Feel good, look great",
+//   },
+// ];
 
-const featuredProducts = [
-  {
-    id: 1,
-    name: "Laptop",
-    price: 50000,
-    category: "Electronics",
-    image: "/images/laptop.jfif",
-    rating: 4.8,
-  },
-  {
-    id: 2,
-    name: "Smartphone",
-    price: 20000,
-    category: "Electronics",
-    image: "/images/mobile.jfif",
-    rating: 4.6,
-  },
-  {
-    id: 3,
-    name: "Headphones",
-    price: 2000,
-    category: "Electronics",
-    image: "/images/headphones.jfif",
-    rating: 4.5,
-  },
-  {
-    id: 4,
-    name: "Smart Watch",
-    price: 4999,
-    category: "Accessories",
-    image: "/images/Smart Watch.jfif",
-    rating: 4.4,
-  },
-];
+// const featuredProducts = [
+//   {
+//     id: 1,
+//     name: "Laptop",
+//     price: 50000,
+//     category: "Electronics",
+//     image: "/images/laptop.jfif",
+//     rating: 4.8,
+//   },
+//   {
+//     id: 2,
+//     name: "Smartphone",
+//     price: 20000,
+//     category: "Electronics",
+//     image: "/images/mobile.jfif",
+//     rating: 4.6,
+//   },
+//   {
+//     id: 3,
+//     name: "Headphones",
+//     price: 2000,
+//     category: "Electronics",
+//     image: "/images/headphones.jfif",
+//     rating: 4.5,
+//   },
+//   {
+//     id: 4,
+//     name: "Smart Watch",
+//     price: 4999,
+//     category: "Accessories",
+//     image: "/images/Smart Watch.jfif",
+//     rating: 4.4,
+//   },
+// ];
 
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [productsError, setProductsError] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [categoriesError, setCategoriesError] = useState("");
 
   const banners = [
     "/images/banner5.jfif",
@@ -83,6 +92,44 @@ export default function HomePage() {
 
     return () => clearInterval(timer);
   }, []);
+  useEffect(() => {
+  axios
+    .get("https://fakestoreapi.com/products")
+    .then((response) => {
+      const products = response.data.slice(0, 4).map((product) => ({
+        ...product,
+        name: product.title,
+        rating: product.rating?.rate,
+      }));
+
+      setFeaturedProducts(products);
+    })
+    .catch((error) => {
+      console.error("Featured products API error:", error);
+      setProductsError("Featured products load nahi ho paaye.");
+    })
+    .finally(() => {
+      setProductsLoading(false);
+    });
+}, []);
+useEffect(() => {
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get(
+        "https://fakestoreapi.com/products/categories"
+      );
+
+      setCategories(response.data);
+    } catch (error) {
+      console.error("Categories API error:", error);
+      setCategoriesError("Categories load nahi ho payi.");
+    } finally {
+      setCategoriesLoading(false);
+    }
+  };
+
+  fetchCategories();
+}, []);
   return (
     <>
       <Header />
@@ -96,18 +143,20 @@ export default function HomePage() {
 
                 {/* Banners */}
                 <div className="relative aspect-[16/6] overflow-hidden rounded-3x">
-                  {banners.map((banner, index) => (
-                    <img
+                    {banners.map((banner, index) => (
+                      <Image
                         key={banner}
                         src={banner}
-                        alt={`Mini Shop Banner ${index + 1}`}
-                        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
+                         alt={`Mini Shop Banner ${index + 1}`}
+                        fill
+                        sizes="(max-width: 1280px) 100vw, 1280px"
+                        className={`object-cover transition-opacity duration-700 ${
                           currentSlide === index
                             ? "opacity-100"
                             : "opacity-0"
                         }`}
                       />
-                  ))}
+                    ))}
                 </div>
 
                 {/* Dark Overlay */}
@@ -203,38 +252,44 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="mt-10 grid grid-cols-4 gap-6">
-            {categories.map((category) => (
+          
+        <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {categoriesLoading ? (
+            <p className="col-span-full py-8 text-center text-gray-500">
+              Loading categories...
+            </p>
+          ) : categoriesError ? (
+            <p className="col-span-full py-8 text-center text-red-500">
+              {categoriesError}
+            </p>
+          ) : (
+            categories.map((category) => (
               <a
-                key={category.id}
-                href="/products"
-                className="group overflow-hidden rounded-2xl border border-gray-200 bg-white transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                key={category}
+                href={`/products?category=${encodeURIComponent(category)}`}
+                className="group rounded-2xl border border-gray-200 bg-white p-6 transition duration-300 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-lg"
               >
-                <div className="h-48 overflow-hidden bg-gray-100">
-                  <img
-                    src={category.image}
-                    alt={category.name}
-                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                  />
+                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 transition group-hover:bg-indigo-600 group-hover:text-white">
+                  <Icon name="package" size={28} />
                 </div>
 
-                <div className="p-5">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {category.name}
-                  </h3>
+                <h3 className="mt-5 text-lg font-semibold capitalize text-gray-900">
+                  {category}
+                </h3>
 
-                  <p className="mt-1 text-sm text-gray-500">
-                    {category.description}
-                  </p>
+                <p className="mt-2 text-sm text-gray-500">
+                  Explore products in this category.
+                </p>
 
-                  <div className="mt-4 flex items-center gap-2 text-sm font-semibold text-gray-900">
-                    Explore
-                    <Icon name="right" size={16} />
-                  </div>
+                <div className="mt-5 flex items-center gap-2 text-sm font-semibold text-indigo-600">
+                  Explore
+                  <Icon name="right" size={16} />
                 </div>
               </a>
-            ))}
-          </div>
+            ))
+          )}
+        </div>
+
 
         </section>
 
@@ -266,7 +321,30 @@ export default function HomePage() {
     </div>
 
     {/* Products */}
-    <div className="mt-10 grid grid-cols-4 gap-6">
+    {/* <div className="mt-10 grid grid-cols-4 gap-6">
+      {featuredProducts.map((product) => (
+        <ProductCard
+          key={product.id}
+          product={product}
+        />
+      ))}
+    </div> */}
+     {/* Products */}
+<div className="mt-10">
+  {productsLoading && (
+    <p className="py-10 text-center text-gray-500">
+      Loading featured products...
+    </p>
+  )}
+
+  {productsError && (
+    <p className="py-10 text-center text-red-500">
+      {productsError}
+    </p>
+  )}
+
+  {!productsLoading && !productsError && (
+    <div className="grid grid-cols-4 gap-6">
       {featuredProducts.map((product) => (
         <ProductCard
           key={product.id}
@@ -274,6 +352,8 @@ export default function HomePage() {
         />
       ))}
     </div>
+  )}
+</div>
 
   </div>
 </section>
